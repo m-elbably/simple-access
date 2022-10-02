@@ -160,7 +160,7 @@ export class MemoryAdapter extends BaseAdapter {
 - **Simple Access** returns permission object
 
 <center>
-    <img src="res/images/flow.svg" alt="How Simple Access Works">
+    <img src="res/images/how-it-works.svg" alt="How Simple Access Works">
 </center>
 
 Let's use the following set of roles as an example:

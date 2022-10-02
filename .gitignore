@@ -9,14 +9,10 @@ lib-cov
 *.gz
 *.swp
 
-data
 pids
 logs
 results
 tmp
-
-# Resources
-res/diagrams
 
 # Coverage reports
 coverage
