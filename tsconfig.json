@@ -13,12 +13,12 @@
         "baseUrl": "./"
     },
     "include": [
-        "src/**/*",
-        "types/**/*"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules/**",
-        "lib"
+        "lib",
+        "dist"
     ],
     "ts-node": {
         "files": true
