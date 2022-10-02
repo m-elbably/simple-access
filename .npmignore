@@ -4,7 +4,7 @@ npm-debug.log*
 # Coverage directory used by tools like istanbul
 coverage
 .nyc_output
-
+s
 # Dependency directories
 node_modules
 
@@ -18,11 +18,11 @@ yarn.lock
 # project files
 src
 test
+data
 examples
-CHANGELOG.md
-.travis.yml
+res
+tsconfig.json
 .editorconfig
 .eslintignore
 .eslintrc
-.babelrc
 .gitignore
