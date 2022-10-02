@@ -9,3 +9,4 @@ All notable changes to this project will be documented in this file. See [standa
 
 * adding data directory ([790ee3a](https://github.com/m-elbably/simple-access/commit/790ee3ad6039ce519ebc5cc07d647c79254024d3))
 * README.md ([922cdc6](https://github.com/m-elbably/simple-access/commit/922cdc6f35ad77e46bdde825177a7a1dc194ef90))
+### 1.0.0 (2022-10-02)
