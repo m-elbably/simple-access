@@ -2,7 +2,7 @@ name: simple-access
 on:
   push:
     branches:
-      - main
+      - master
 jobs:
   Publish:
     runs-on: ubuntu-latest
