@@ -5,7 +5,7 @@ Attribute-Role-Based Hybrid Access Control Library
 [![Node Version](https://img.shields.io/node/v/simple-access.svg)](https://nodejs.org)
 [![npm version](https://img.shields.io/npm/v/simple-access/latest.svg)](https://www.npmjs.com/package/simple-access)
 [![Build Status](https://github.com/m-elbably/simple-access/workflows/simple-access/badge.svg)](https://github.com/m-elbably/simple-access/workflows/simple-access/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/m-elbably/simple-access/badge.svg?branch=main&t=pKbxsM)](https://coveralls.io/github/m-elbably/simple-access?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/m-elbably/simple-access/badge.svg?branch=master&t=pKbxsM)](https://coveralls.io/github/m-elbably/simple-access?branch=master)
 [![License](https://img.shields.io/github/license/m-elbably/simple-access.svg)](https://raw.githubusercontent.com/m-elbably/simple-access/master/LICENSE)
 
 ## Installation
@@ -59,20 +59,20 @@ Role is the level of access given to subject (user or business entity) when this
 **Role Schema**
 ```json
 {
-	"name": "string",
-	"resources": [
-		{
-			"name": "string",
-			"actions": [
-				{
-					"name": "string",
-					"attributes": ["string"],
-					"conditions": ["object"],
-					"scope": "object"
-				}
-			]
-		}
-	]
+    "name": "string",
+    "resources": [
+        {
+            "name": "string",
+            "actions": [
+                {
+                    "name": "string",
+                    "attributes": ["string"],
+                    "conditions": ["object"], 
+                    "scope": "object"
+                }
+            ]
+        }
+    ]
 }
 ```
 
@@ -119,12 +119,10 @@ export class MemoryAdapter extends BaseAdapter {
 
     constructor(roles?: Array<Role>) {
         super("MemoryAdapter");
-        if (roles != null) {
-            this.addRoles(roles);
-        }
+        this.addRoles(roles);
     }
 
-    addRoles(roles: Array<Role>): void {
+    setRoles(roles: Array<Role>): void {
         this._roles = roles;
         this._cache = {};
         this._roles.forEach((role: Role) => {
@@ -258,8 +256,9 @@ The returned permission
 - **Attributes** are merged, and the most permissive attributes will override.
     - Attributes `["*"]` will override attributes `["name", "age", "!address"]`
     - Attributes `["name", "age"]` will merge with attributes `["address"]` into new attributes array `["name", "age", "address"]`
-    - Attributes `["name", "age"]` will be merged with attributes `["image", "!address"]` into new attributes array `["name", "age", "image", "!address"]`
-    - Attributes `["*", "name"]` will be merged with attributes `["image", "!address"]` into new attributes array `["*", "!address"]` and `["name" , "image"]` will be omitted as the first role has access to `*` attributes
+    - Attributes `["*", "!address"]` will be merged with attributes `["age"]` into new attributes array `["*", "!address"]`
+    - Attributes `["*", "!age"]` will be merged with attributes `["*", "!image", "!address"]` into new attributes array `["*"]` and `["age" , "image", "address"]` will be allowed because they are not negated from both sides
+    - Attributes `["*", "!age"]` will be merged with attributes `["image"]` into new attributes array `["*", "!age"]` and `"image"` attributes will be omitted because its by default allowed
 
 >**Projected** (Allowed) attributes gets merged based on a **union** operation<br>
 >**Negated** (Not allowed) attributes gets merged based on **intersection** operation
@@ -310,7 +309,7 @@ You can use a set of MongoDB queries in JavaScript, like following operators:
 You can do this check using `canSubjectAccessResource` function:<br>
 `canSubjectAccessResource(permission: Permission, subject: Object, resource: Object): boolean`
 
-You can refer to specific attributes in subject with `subject.` and refer to attributes in resource `resource.` as a prefix, and it will substituted with the actual values before evaluation.
+You can refer to specific attributes in subject with `subject.` and refer to attributes in resource `resource.` as a prefix, and it will be substituted with the actual values before evaluation.
 
 **Example:**
 ```json
@@ -359,7 +358,7 @@ if(permission.granted) {
 
 >Simple Access is depending on [Floppy Filter](https://github.com/m-elbably/floppy-filter) library for complex object filtering, Please check its documentation to know how to select or negate attributes in an efficient way.
 
-You can do this check using `filter` function:<br>
+You can do this using `filter` function:<br>
 `filter(permission: Permission, data: Object): Object`
 
 **Example:**

@@ -1,8 +1,8 @@
-import * as _ from 'lodash';
+import * as _ from "lodash";
 import Ajv from "ajv";
 import { Tuple, Role, ErrorEx, Action } from "./types";
 import { BaseAdapter } from "./adapters";
-import { Utils } from "./core/utils";
+import { Utils } from "./core";
 import { PermissionOptions, Permission } from "./types";
 import { roleSchema } from "./validation";
 
@@ -73,7 +73,7 @@ export class SimpleAccess {
                 }
 
                 resource.actions.forEach((action) => {
-                    const iAction: Action = {
+                    const currentAction: Action = {
                         name: action.name,
                         attributes: action.attributes
                             ? Array.from(action.attributes)
@@ -90,74 +90,84 @@ export class SimpleAccess {
                         return;
                     }
 
-                    cachedAction = resources[resource.name][iAction.name];
+                    cachedAction = resources[resource.name][currentAction.name];
 
                     if (cachedAction == null) {
-                        resources[resource.name][iAction.name] = iAction;
+                        resources[resource.name][currentAction.name] =
+                            currentAction;
                     } else {
                         // Check and merge attributes
-                        const actionAllAttrs =
-                            iAction.attributes.length === 1 &&
-                            iAction.attributes[0] === ALL;
-                        const rActionAllAttrs =
+                        const currentActionAllowAllEx =
+                            currentAction.attributes.length === 1 &&
+                            currentAction.attributes[0] === ALL;
+                        const cachedActionAllowAllEx =
                             cachedAction.attributes.length === 1 &&
                             cachedAction.attributes[0] === ALL;
 
-                        if (!rActionAllAttrs) {
-                            if (actionAllAttrs) {
+                        if (!cachedActionAllowAllEx) {
+                            if (currentActionAllowAllEx) {
                                 // If action or cached actions = ['*'] then, no need to merge
                                 // We take the most permissive attributes
                                 cachedAction.attributes = [ALL];
                             } else {
-                                let startsWithAll = false;
-                                const rAttributes = [];
+                                const attributesBuffer = [];
+                                const currentActionAllowAll =
+                                    currentAction.attributes[0] === ALL;
+                                const cachedActionAllowAll =
+                                    cachedAction.attributes[0] === ALL;
 
-                                if (iAction.attributes[0] === ALL) {
-                                    startsWithAll = true;
-                                    iAction.attributes.splice(0, 1);
-                                } else if (cachedAction.attributes[0] === ALL) {
-                                    startsWithAll = true;
-                                    cachedAction.attributes.splice(0, 1);
+                                if (
+                                    !currentActionAllowAll &&
+                                    !cachedActionAllowAll
+                                ) {
+                                    const projected = _.filter(
+                                        _.union(
+                                            currentAction.attributes,
+                                            cachedAction.attributes
+                                        ),
+                                        (a) => a != null && !a.startsWith("!")
+                                    );
+
+                                    attributesBuffer.push(...projected);
+                                } else if (
+                                    currentActionAllowAll &&
+                                    cachedActionAllowAll
+                                ) {
+                                    const negated = _.filter(
+                                        _.intersection(
+                                            currentAction.attributes,
+                                            cachedAction.attributes
+                                        ),
+                                        (a) => a != null && a.startsWith("!")
+                                    );
+
+                                    attributesBuffer.push(ALL, ...negated);
+                                } else if (
+                                    currentActionAllowAll ||
+                                    cachedActionAllowAll
+                                ) {
+                                    const negated = _.filter(
+                                        _.union(
+                                            currentAction.attributes,
+                                            cachedAction.attributes
+                                        ),
+                                        (a) => a != null && a.startsWith("!")
+                                    );
+
+                                    attributesBuffer.push(ALL, ...negated);
                                 }
 
-                                // Select projection attributes with union
-                                const projected = _.filter(
-                                    _.union(
-                                        iAction.attributes,
-                                        cachedAction.attributes
-                                    ),
-                                    (a) => a != null && !a.startsWith("!")
-                                );
-
-                                // Select negated attributes with intersection
-                                // Different negated attributes in both side means it's allowed on both due to its absence
-                                const negated = _.filter(
-                                    _.intersection(
-                                        iAction.attributes,
-                                        cachedAction.attributes
-                                    ),
-                                    (a) => a != null && a.startsWith("!")
-                                );
-
-                                // Add the union between selected and negated attributes, based on wild card operator '*'
-                                if (startsWithAll) {
-                                    rAttributes.push(ALL);
-                                    rAttributes.push(...negated);
-                                } else {
-                                    rAttributes.push(...projected);
-                                }
-
-                                cachedAction.attributes = rAttributes;
+                                cachedAction.attributes = attributesBuffer;
                             }
                         }
 
                         // Check conditions
-                        if (iAction.conditions == null) {
-                            iAction.conditions = [];
+                        if (currentAction.conditions == null) {
+                            currentAction.conditions = [];
                         }
 
                         const isEmptyConditions =
-                            iAction.conditions.length === 0;
+                            currentAction.conditions.length === 0;
                         const isEmptyCachedConditions =
                             cachedAction.conditions.length === 0;
 
@@ -168,18 +178,18 @@ export class SimpleAccess {
                         } else {
                             if (!isEmptyCachedConditions) {
                                 cachedAction.conditions.push(
-                                    ...iAction.conditions
+                                    ...currentAction.conditions
                                 );
                             }
                         }
 
                         // Check scope
-                        if (iAction.scope == null) {
-                            iAction.scope = {};
+                        if (currentAction.scope == null) {
+                            currentAction.scope = {};
                         }
 
                         const isScopeEmpty =
-                            Object.entries(iAction.scope).length === 0;
+                            Object.entries(currentAction.scope).length === 0;
                         const isCachedScopeEmpty =
                             Object.entries(cachedAction.scope).length === 0;
                         if (isScopeEmpty) {
@@ -188,7 +198,7 @@ export class SimpleAccess {
                             }
                         } else {
                             if (!isCachedScopeEmpty) {
-                                Object.entries(iAction.scope).forEach(
+                                Object.entries(currentAction.scope).forEach(
                                     ([k, v]) => {
                                         cachedAction.scope[k] = v;
                                     }

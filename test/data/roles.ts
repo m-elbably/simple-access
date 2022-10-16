@@ -30,7 +30,7 @@ export const Roles = [
                 name: RESOURCES.PRODUCT,
                 actions: [
                     { name: "create", attributes: ["*", "active"] },
-                    { name: "read", attributes: ["*", "active"] },
+                    { name: "read", attributes: ["active"] },
                     { name: "update", attributes: ["*", "!history"] },
                     { name: "delete", attributes: ["*"] },
                 ],

@@ -1,6 +1,6 @@
 {
     "name": "simple-access",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Attribute-Role-Based Hybrid Access Control Library",
     "homepage": "https://github.com/m-elbably/simple-access#readme",
     "repository": "https://github.com/m-elbably/simple-access",

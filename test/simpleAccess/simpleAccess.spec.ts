@@ -16,7 +16,7 @@ before(() => {
 describe("Test core functionalities", () => {
     it("Should return validation error, for invalid adapter", async () => {
         try {
-            const simpleAccess = new SimpleAccess(undefined);
+            new SimpleAccess(undefined);
         } catch (e) {
             expect(e)
                 .to.be.instanceOf(Error)
@@ -320,6 +320,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
     it("Should return permission object with all allowed attributes in action - all attributes", async () => {
         const ACTION_NAME = "read";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
+        const RESULT = ["*", "!history"];
         const permission = await acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
@@ -334,13 +335,13 @@ describe("Test can functionality with overlapped roles - attributes", () => {
             .with.ownProperty(ACTION_NAME)
             .with.ownProperty("attributes")
             .to.be.an("array")
-            .eql(["*"]);
+            .eql(RESULT);
 
         expect(permission)
             .to.be.an("object")
             .with.property("attributes")
             .to.be.an("array")
-            .eql(["*"]);
+            .eql(RESULT);
     });
 
     it("Should return permission object with all allowed attributes in action - filtered all attributes", async () => {
@@ -399,6 +400,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
     it("Should return permission object with all allowed attributes in action - mixed attributes", async () => {
         const ACTION_NAME = "read";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
+        const RESULT = ["*", "!history"];
         const permission = await acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
@@ -413,13 +415,13 @@ describe("Test can functionality with overlapped roles - attributes", () => {
             .with.ownProperty(ACTION_NAME)
             .with.ownProperty("attributes")
             .to.be.an("array")
-            .eql(["*"]);
+            .eql(RESULT);
 
         expect(permission)
             .to.be.an("object")
             .with.property("attributes")
             .to.be.an("array")
-            .eql(["*"]);
+            .eql(RESULT);
     });
 
     it("Should return permission object with all allowed attributes in action - negated attributes", async () => {
@@ -788,7 +790,7 @@ describe("Test data filtration base on permission", () => {
         const resource = acl.filter(permission, PRODUCTS[0]);
 
         expect(resource).to.be.an("object").to.have.ownProperty("authorId");
-        expect(resource).to.be.an("object").to.not.have.ownProperty("isAction");
+        expect(resource).to.be.an("object").to.not.have.ownProperty("isActive");
     });
 });
 
@@ -816,6 +818,6 @@ describe("Test permission bounded functionalities", () => {
         const resource = permission.filter(PRODUCTS[0]);
 
         expect(resource).to.be.an("object").to.have.ownProperty("authorId");
-        expect(resource).to.be.an("object").to.not.have.ownProperty("isAction");
+        expect(resource).to.be.an("object").to.not.have.ownProperty("isActive");
     });
 });
