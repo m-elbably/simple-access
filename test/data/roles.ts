@@ -1,4 +1,5 @@
 import { RESOURCES } from "./resources";
+import { Role } from "../../src";
 
 export const ROLES = {
     ADMINISTRATOR: "administrator",
@@ -6,7 +7,7 @@ export const ROLES = {
     SUPPORT: "support",
 };
 
-export const Roles = [
+export const Roles: Role[] = [
     {
         name: ROLES.ADMINISTRATOR,
         resources: [
@@ -51,14 +52,20 @@ export const Roles = [
             {
                 name: RESOURCES.CONFIGURATION,
                 actions: [
-                    { name: "read", attributes: ["*"] },
+                    {
+                        name: "read",
+                        attributes: ["*"],
+                    },
                     { name: "update", attributes: ["status", "items"] },
                 ],
             },
             {
                 name: RESOURCES.ORDER,
                 actions: [
-                    { name: "read", attributes: ["*"] },
+                    {
+                        name: "read",
+                        attributes: ["*"],
+                    },
                     { name: "create", attributes: ["*"] },
                     {
                         name: "update",
@@ -73,10 +80,6 @@ export const Roles = [
                     {
                         name: "read",
                         attributes: ["*", "!history"],
-                        conditions: [
-                            { "subject.id": { $eq: "resource.authorId" } },
-                            { "subject.id": { $ne: undefined as any } },
-                        ],
                         scope: {
                             valid: true,
                         },
@@ -102,13 +105,6 @@ export const Roles = [
                     {
                         name: "update",
                         attributes: ["firstName", "lastName"],
-                        conditions: [
-                            {
-                                "resource.createdAt": {
-                                    $lte: new Date("2020-10-21T06:00:00Z"),
-                                },
-                            },
-                        ],
                     },
                 ],
             },
@@ -120,15 +116,6 @@ export const Roles = [
                     {
                         name: "export",
                         attributes: ["*"],
-                        conditions: [
-                            {
-                                "resource.items": {
-                                    $where: function () {
-                                        return this.count >= 9;
-                                    },
-                                },
-                            },
-                        ],
                     },
                 ],
             },
@@ -138,15 +125,6 @@ export const Roles = [
                     {
                         name: "read",
                         attributes: ["*", "!isActive"],
-                        conditions: [
-                            { "subject.address.country": { $eq: "Canada" } },
-                            { "resource.sku": { $lte: 5000 } },
-                            {
-                                "resource.createdAt": {
-                                    $gte: new Date("2020-10-21T06:00:00Z"),
-                                },
-                            },
-                        ],
                         scope: {
                             namespace: "*.merchant.products",
                             products: [1, 229, 3394],

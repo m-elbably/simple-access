@@ -11,9 +11,11 @@ Attribute-Role-Based Hybrid Access Control Library
 ## Installation
 `npm install simple-access --save`
 
+> **V2.0 Breaking Changes**<br>
+> The `conditions` property has been removed from the `action` object due to its side effects. Instead, you can use the `scope` property to add custom attributes and validate them using application logic.
+
 ## Features
 - Hybrid access control with the best features from RBAC & ABAC
-- Ability to validate subject access to resource based on granted permission
 - Ability to filter resource data based on granted permission
 - Simplicity & flexibility
 
@@ -50,7 +52,6 @@ Role is the level of access given to subject (user or business entity) when this
 - Role may grant access to one or more unique resources
 - Resource may grant access to resource with based on one or more unique actions
 - Action may have list of attributes that can be used to filter resource data
-- Action may have conditions that can be validated to access a specific resource
 
 > Subject (User or business entity) can have one or more roles assigned based on their responsibilities and qualifications.
 
@@ -67,7 +68,6 @@ Role is the level of access given to subject (user or business entity) when this
                 {
                     "name": "string",
                     "attributes": ["string"],
-                    "conditions": ["object"], 
                     "scope": "object"
                 }
             ]
@@ -95,7 +95,6 @@ Permission describes the way in which a subject may access a resource
 	},
 	"grants": "object",
 	"attributes": ["string"],
-	"conditions": ["object"],
 	"scope": "object"
 }
 ```
@@ -178,14 +177,7 @@ const roles = [
           {"name": "update", "attributes": ["*","!history"]},
           {
             "name": "delete",
-            "attributes": ["*"],
-            "conditions": [
-              {
-                "subject.id": {
-                  "$eq": "resource.authorId"
-                }
-              }
-            ]
+            "attributes": ["*"]
           }
         ]
       },
@@ -238,12 +230,11 @@ The returned permission
 		}
 	},
 	"attributes": ["*"],
-	"conditions": [],
 	"scope": {}
 }
 ```
 
->`can` function **only** checks if *subject* with assigned role *operation* **can** access the **resource** _order_ through _read_ action, It will not filter resource data or evaluate conditions within action, as these functionalities provided through other functions and needs additional information to work properly.
+>`can` function **only** checks if *subject* with assigned role *operation* **can** access the **resource** _order_ through _read_ action, It will not filter resource data, as this functionality provided through other functions and needs additional information to work properly.
 
 ### Validating Access with Overlapped Roles
 **Simple Access** will merge overlapped roles before validation according to these details:
@@ -262,16 +253,6 @@ The returned permission
 
 >**Projected** (Allowed) attributes gets merged based on a **union** operation<br>
 >**Negated** (Not allowed) attributes gets merged based on **intersection** operation
-
-- **Conditions** are merged (Union), and the most permissive conditions will override.
-    - Empty conditions `[]` will override all other conditions, and in this case no conditions will be evaluated
-    - Conditions `[{"subject.id": {"$eq": "resource.userId"}}]` will be merged with conditions `[{"subject.age": {"$gte": 16}}]` into:
-  ```json
-  [
-      {"subject.id": {"$eq": "resource.userId"}},
-      {"subject.age": {"$gte": 16}}
-  ]	    
-  ```
 
 - **Scopes** are merged (Union), and the most permissive scope will override.
     - Empty scope `{}` will override all other scopes
@@ -294,62 +275,6 @@ const permission = await simpleAccess.can(["operation", "support"], "read", "ord
 
 if(permission.granted) {
 	console.log("Permissin Granted");
-}
-```
-
-### Validating Subject Access to Resource
-
-**Simple Access** can check if permission allows subject (like "user") to access resource (like "order"),  role conditions will be evaluated for this check.
-
-You can use a set of MongoDB queries in JavaScript, like following operators:
-`$in, $nin, $exists, $gte, $gt, $lte, $lt, $eq, $ne, $mod, $all, $and, $or, $nor, $not, $size, $type, $regex, $where, $elemMatch`
-
->Simple Access is depending on [Sift](https://github.com/crcn/sift.js) library to support conditions within roles, Please check its documentation to create conditions in the right syntax.
-
-You can do this check using `canSubjectAccessResource` function:<br>
-`canSubjectAccessResource(permission: Permission, subject: Object, resource: Object): boolean`
-
-You can refer to specific attributes in subject with `subject.` and refer to attributes in resource `resource.` as a prefix, and it will be substituted with the actual values before evaluation.
-
-**Example:**
-```json
-{
-    "subject.id": {
-        "$eq": "resource.authorId"
-    }
-}
-```
-
-`subject.id` will be substituted with the `id` value from `subject` object, and `resource.authorId` will be substituted with the `authorId` value from `resource`
-
-**Usage:**
-```typescript
-import {SimpleAccess, MemoryAdapter} from "simple-access";
-
-const adapter = new SimpleAdapter(roles);
-const simpleAccess = new SimpleAccess(adapter);
-const subject = {
-    "id": 1002, 
-    roles: ["operation"]
-};
-const resource = {
-    "authorId": 1002,
-    "price": 75.08
-};
-
-const permission = await simpleAccess.can("operation", "read", "order");
-if(permission.granted) {
-    // Check if user can access specific resource (object)
-    // Conditions attached to role will be evaluated
-    const canRead = simpleAccess.canSubjectAccessResource(permission, subject, resource);
-}
-```
-
-For simplicity and flexibility you can also call `canSubjectAccessResource` from **Permission** object
-```typescript
-const permission = await simpleAccess.can("operation", "read", "order");
-if(permission.granted) {
-    const canRead = permission.canSubjectAccessResource(subject, resource);
 }
 ```
 

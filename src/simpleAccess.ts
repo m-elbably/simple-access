@@ -41,7 +41,7 @@ export class SimpleAccess {
     /**
      * Build hash table from one or more roles, merging resources and actions
      * @param {Array<Role>} roles Roles array
-     * @returns {{[p: string]: Tuple}} Object with merged resources, including internal data like attributes, conditions
+     * @returns {{[p: string]: Tuple}} Object with merged resources, including internal data like attributes
      * @private
      */
     private getResources(roles: Array<Role>): { [k: string]: any } {
@@ -73,15 +73,13 @@ export class SimpleAccess {
                 }
 
                 resource.actions.forEach((action) => {
+                    const aObj = action as Action;
                     const currentAction: Action = {
-                        name: action.name,
-                        attributes: action.attributes
-                            ? Array.from(action.attributes)
+                        name: aObj.name,
+                        attributes: aObj.attributes
+                            ? Array.from(aObj.attributes)
                             : [],
-                        conditions: action.conditions
-                            ? Array.from(action.conditions)
-                            : [],
-                        scope: action.scope ? Object.assign(action.scope) : {},
+                        scope: aObj.scope ? Object.assign(aObj.scope) : {},
                     };
                     let cachedAction: Action;
 
@@ -161,28 +159,6 @@ export class SimpleAccess {
                             }
                         }
 
-                        // Check conditions
-                        if (currentAction.conditions == null) {
-                            currentAction.conditions = [];
-                        }
-
-                        const isEmptyConditions =
-                            currentAction.conditions.length === 0;
-                        const isEmptyCachedConditions =
-                            cachedAction.conditions.length === 0;
-
-                        if (isEmptyConditions) {
-                            if (!isEmptyCachedConditions) {
-                                cachedAction.conditions = [];
-                            }
-                        } else {
-                            if (!isEmptyCachedConditions) {
-                                cachedAction.conditions.push(
-                                    ...currentAction.conditions
-                                );
-                            }
-                        }
-
                         // Check scope
                         if (currentAction.scope == null) {
                             currentAction.scope = {};
@@ -236,7 +212,6 @@ export class SimpleAccess {
             access: { roles: roleNames, action, resource },
             grants: {},
             attributes: [],
-            conditions: [],
             scope: {},
         };
 
@@ -275,7 +250,7 @@ export class SimpleAccess {
             this.validateRole(roles[i]);
         }
 
-        // Merge roles resource, actions, attributes, conditions and scope (if possible)
+        // Merge roles resource, actions, attributes and scope (if possible)
         const resources = this.getResources(roles);
         pInfo.grants = resources;
 
@@ -284,37 +259,18 @@ export class SimpleAccess {
             if (resources[resource] === ALL) {
                 // If subject has access to all actions within the resource
                 pInfo.attributes = [ALL];
-                pInfo.conditions = [];
                 pInfo.scope = {};
                 pInfo.granted = true;
             } else if (resources[resource][action] != null) {
                 // If subject has access specific actions within the resource
-                const { attributes, conditions, scope } =
-                    resources[resource][action];
+                const { attributes, scope } = resources[resource][action];
                 pInfo.attributes = attributes || [];
-                pInfo.conditions = conditions || [];
                 pInfo.scope = scope || {};
                 pInfo.granted = true;
             }
         }
 
         return new Permission(pInfo);
-    }
-
-    /**
-     * Check if permission allows subject (like user) to access resource,
-     * role conditions will be evaluated for this check
-     * @param permission Permission object
-     * @param {Tuple} subject User object
-     * @param {Tuple} resource Resource object
-     * @returns {Promise<boolean>}
-     */
-    canSubjectAccessResource(
-        permission: Permission,
-        subject: Tuple,
-        resource: Tuple
-    ): boolean {
-        return Utils.canSubjectAccessResource(permission, subject, resource);
     }
 
     /**

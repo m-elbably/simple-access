@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { before, describe, it } from "mocha";
 
 import { ErrorEx, Role, Permission } from "../../src";
-import { Roles, ROLES, RESOURCES, PRODUCTS, USERS, ORDERS } from "../data";
+import { Roles, ROLES, RESOURCES, PRODUCTS } from "../data";
 import { SimpleAccess, BaseAdapter, MemoryAdapter } from "../../src";
 
 let adapter: BaseAdapter;
@@ -37,7 +37,6 @@ describe("Test core functionalities", () => {
                                 {
                                     name: "read",
                                     attributes: ["*"],
-                                    conditions: ["*"],
                                 },
                             ],
                         },
@@ -149,11 +148,6 @@ describe("Test permission object", () => {
         expect(attributes).to.be.an("array").to.be.eql(["status", "items"]);
     });
 
-    it("Should return permission object with conditions array", async () => {
-        const { conditions } = permission;
-        expect(conditions).to.be.an("array").with.length(0);
-    });
-
     it("Should return permission object with scope object", async () => {
         const { scope } = permission;
         expect(scope).to.be.an("object").and.to.be.eql({});
@@ -222,9 +216,7 @@ describe("Test can functionality with overlapped roles - permission access", () 
         const { action, resource, roles } = access;
 
         expect(action).to.be.equal(ACTION_NAME);
-
         expect(resource).to.be.equal(RESOURCE_NAME);
-
         expect(roles).to.be.an("array").to.be.eql(ROLE_NAME);
     });
 });
@@ -274,7 +266,9 @@ describe("Test can functionality with overlapped roles - actions", () => {
             role.resources.forEach((resource) => {
                 if (resource.name === RESOURCE_NAME) {
                     resource.actions.forEach((action) => {
-                        actions[action.name] = action;
+                        if (typeof action === "object") {
+                            actions[action.name] = action;
+                        }
                     });
                 }
             });
@@ -452,75 +446,6 @@ describe("Test can functionality with overlapped roles - attributes", () => {
     });
 });
 
-describe("Test can functionality with overlapped roles - conditions", () => {
-    it("Should return permission object with the most permissive conditions applied", async () => {
-        const ACTION_NAME = "read";
-        const RESOURCE_NAME = RESOURCES.PRODUCT;
-        const permission = await acl.can(
-            [ROLES.ADMINISTRATOR, ROLES.OPERATION],
-            ACTION_NAME,
-            RESOURCE_NAME
-        );
-
-        const {
-            grants: { [RESOURCE_NAME]: resource },
-        } = permission;
-        expect(resource)
-            .to.be.an("object")
-            .with.ownProperty(ACTION_NAME)
-            .with.ownProperty("conditions")
-            .to.be.an("array")
-            .eql([]);
-
-        expect(permission)
-            .to.be.an("object")
-            .with.property("conditions")
-            .to.be.an("array")
-            .eql([]);
-    });
-
-    it("Should return permission object with all conditions merged", async () => {
-        const ROLE_NAME = [ROLES.OPERATION, ROLES.SUPPORT];
-        const ACTION_NAME = "read";
-        const RESOURCE_NAME = RESOURCES.PRODUCT;
-        const permission = await acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
-
-        const {
-            grants: { [RESOURCE_NAME]: resource },
-        } = permission;
-        const roles = acl.adapter.getRolesByName(ROLE_NAME) as Role[];
-        const conditions: any[] = [];
-
-        roles.forEach((role) => {
-            role.resources.forEach((resource) => {
-                if (resource.name === RESOURCE_NAME) {
-                    resource.actions.forEach((action) => {
-                        if (
-                            action.name === ACTION_NAME &&
-                            action.conditions != null
-                        ) {
-                            conditions.push(...action.conditions);
-                        }
-                    });
-                }
-            });
-        });
-
-        expect(resource)
-            .to.be.an("object")
-            .with.ownProperty(ACTION_NAME)
-            .with.ownProperty("conditions")
-            .to.be.an("array")
-            .eql(conditions);
-
-        expect(permission)
-            .to.be.an("object")
-            .with.property("conditions")
-            .to.be.an("array")
-            .eql(conditions);
-    });
-});
-
 describe("Test can functionality with overlapped roles - scope", () => {
     it("Should return permission object with the most permissive scope applied", async () => {
         const ACTION_NAME = "read";
@@ -565,6 +490,7 @@ describe("Test can functionality with overlapped roles - scope", () => {
                 if (resource.name === RESOURCE_NAME) {
                     resource.actions.forEach((action) => {
                         if (
+                            typeof action === "object" &&
                             action.name === ACTION_NAME &&
                             action.scope != null
                         ) {
@@ -589,193 +515,6 @@ describe("Test can functionality with overlapped roles - scope", () => {
             .with.property("scope")
             .to.be.an("object")
             .eql(scope);
-    });
-});
-
-describe("Test subject access to a resource - permission object", () => {
-    const subject = USERS[0];
-    const resource = PRODUCTS[0];
-
-    it("Should return access ability equal false if user permission is not granted", async () => {
-        const permission = await acl.can(
-            ROLES.OPERATION,
-            "delete",
-            RESOURCES.PRODUCT
-        );
-
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            subject,
-            resource
-        );
-
-        expect(ability).to.be.equal(false);
-    });
-
-    it("Should return access ability equal true if user permission is granted", async () => {
-        const permission = await acl.can(
-            ROLES.OPERATION,
-            "update",
-            RESOURCES.PRODUCT
-        );
-
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            subject,
-            resource
-        );
-
-        expect(ability).to.be.equal(true);
-    });
-});
-
-describe("Test subject access to a resource - role basic conditions", () => {
-    let permission: Permission;
-
-    before(async () => {
-        permission = await acl.can(ROLES.OPERATION, "read", RESOURCES.PRODUCT);
-    });
-
-    it("Should return false if resource is invalid", async () => {
-        const ability = acl.canSubjectAccessResource(permission, USERS[0], {});
-
-        expect(ability).to.be.equal(false);
-    });
-
-    it("Should return false if subject is invalid", async () => {
-        const ability = acl.canSubjectAccessResource(permission, {}, USERS[0]);
-
-        expect(ability).to.be.equal(false);
-    });
-
-    it("Should return true if user can read provided resource", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[0],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(true);
-    });
-
-    it("Should return false if user can not read provided resource", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[1],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(false);
-    });
-});
-
-describe("Test subject access to a resource - role multiple conditions", () => {
-    let permission: Permission;
-
-    before(async () => {
-        permission = await acl.can(ROLES.SUPPORT, "read", RESOURCES.PRODUCT);
-    });
-
-    it("Should return true if user can read provided resource according to role conditions", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[0],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(true);
-    });
-
-    it("Should return false if user can not read provided resource according to role conditions", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[1],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(false);
-    });
-});
-
-describe("Test subject access to a resource - role with merged conditions", () => {
-    let permission: Permission;
-
-    before(async () => {
-        permission = await acl.can(
-            [ROLES.OPERATION, ROLES.SUPPORT],
-            "read",
-            RESOURCES.PRODUCT
-        );
-    });
-
-    it("Should return true if user can read provided resource according to role conditions", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[0],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(true);
-    });
-
-    it("Should return false if user can not read provided resource according to role conditions", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[1],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(false);
-    });
-});
-
-describe("Test subject access to a resource - role with complex conditions", () => {
-    let permission: Permission;
-
-    before(async () => {
-        permission = await acl.can(ROLES.SUPPORT, "export", RESOURCES.ORDER);
-    });
-
-    it("Should return true if user can read provided resource", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[0],
-            ORDERS[1]
-        );
-
-        expect(ability).to.be.equal(true);
-    });
-});
-
-describe("Test subject access to a resource - role with empty conditions", () => {
-    let permission: Permission;
-
-    before(async () => {
-        permission = await acl.can(
-            [ROLES.ADMINISTRATOR, ROLES.SUPPORT],
-            "read",
-            RESOURCES.PRODUCT
-        );
-    });
-
-    it("Should return true if user can read provided resource", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[0],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(true);
-    });
-
-    it("Should return false if user can not read provided resource according to role conditions", async () => {
-        const ability = acl.canSubjectAccessResource(
-            permission,
-            USERS[1],
-            PRODUCTS[0]
-        );
-
-        expect(ability).to.be.equal(true);
     });
 });
 
@@ -805,16 +544,13 @@ describe("Test permission bounded functionalities", () => {
         );
     });
 
-    it("Should return true if user can read provided resource", async () => {
-        const ability = permission.canSubjectAccessResource(
-            USERS[0],
-            PRODUCTS[0]
-        );
+    it("Should return same data object when filtering if data is null", async () => {
+        const resource = permission.filter(null);
 
-        expect(ability).to.be.equal(true);
+        expect(resource).to.be.equal(null);
     });
 
-    it("Should return false if user can not read provided resource according to role conditions", async () => {
+    it("Should filter provided resource according to role allowed attributes", async () => {
         const resource = permission.filter(PRODUCTS[0]);
 
         expect(resource).to.be.an("object").to.have.ownProperty("authorId");

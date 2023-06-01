@@ -2,6 +2,21 @@ export interface Tuple {
     [key: string]: any;
 }
 
+type ArrayLengthMutationKeys =
+    | "splice"
+    | "push"
+    | "pop"
+    | "shift"
+    | "unshift"
+    | number;
+type ArrayItems<T extends Array<any>> = T extends Array<infer TItems>
+    ? TItems
+    : never;
+export type FixedLengthArray<T extends any[]> = Pick<
+    T,
+    Exclude<keyof T, ArrayLengthMutationKeys>
+> & { [Symbol.iterator]: () => IterableIterator<ArrayItems<T>> };
+
 export class ErrorEx extends Error {
     static VALIDATION_ERROR: "VALIDATION_ERROR";
 
@@ -18,14 +33,11 @@ export interface Role {
 
 export interface Resource {
     name: string;
-    actions: Array<Action>;
+    actions: Array<Action> | FixedLengthArray<["*"]>;
 }
 
 export interface Action {
     name: string;
     attributes?: Array<string>;
-    conditions?: Array<string>;
-    scope?: {
-        [k: string]: Tuple;
-    };
+    scope?: Tuple;
 }

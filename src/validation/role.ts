@@ -34,13 +34,6 @@ export const roleSchema = {
                                             uniqueItems: true,
                                             items: { type: "string" },
                                         },
-                                        conditions: {
-                                            type: "array",
-                                            minItems: 0,
-                                            maxItems: 64,
-                                            uniqueItems: true,
-                                            items: { type: "object" },
-                                        },
                                         scope: { type: "object" },
                                     },
                                     required: ["name", "attributes"],
