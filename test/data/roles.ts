@@ -1,5 +1,5 @@
 import { RESOURCES } from "./resources";
-import { Role } from "../../src";
+import { type Role } from "../../src";
 
 export const ROLES = {
     ADMINISTRATOR: "administrator",

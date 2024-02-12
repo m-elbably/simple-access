@@ -1,6 +1,13 @@
 import * as _ from "lodash";
 import Ajv from "ajv";
-import { Tuple, Role, ErrorEx, Action, CanReturnType } from "./types";
+import {
+    Tuple,
+    Role,
+    ErrorEx,
+    Action,
+    CanReturnType,
+    TypeOfClassMethodReturn,
+} from "./types";
 import { BaseAdapter } from "./adapters";
 import { Utils } from "./core";
 import { PermissionOptions, Permission } from "./types";
@@ -8,12 +15,13 @@ import { roleSchema } from "./validation";
 
 const ALL = "*";
 
-export class SimpleAccess {
-    constructor(
-        private readonly _adapter: BaseAdapter<
-            Array<Role> | Promise<Array<Role>>
-        >
-    ) {
+/**
+ * SimpleAccess Adapter Class
+ * @class
+ * @typeParam T - Type of Adapter
+ */
+export class SimpleAccess<T extends BaseAdapter<any>> {
+    constructor(private readonly _adapter: T) {
         if (this._adapter == null) {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
@@ -193,7 +201,7 @@ export class SimpleAccess {
         return resources;
     }
 
-    get adapter(): BaseAdapter<Array<Role> | Promise<Array<Role>>> {
+    get adapter(): T {
         return this._adapter;
     }
 
@@ -264,6 +272,7 @@ export class SimpleAccess {
     /**
      * Check the ability of accessing a resource through one or more roles (assigned to subject)
      * and the ability of executing specific action on this resource
+     * @method
      * @param {Array<string> | string} role One or more roles
      * @param {Array<string> | string} action Action name (Like "create")
      * @param {string} resource Resource name (Like "order")
@@ -273,7 +282,7 @@ export class SimpleAccess {
         role: Array<string> | string,
         action: string,
         resource: string
-    ): CanReturnType<ReturnType<typeof this._adapter.getRolesByName>> {
+    ): CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">> {
         const roleNames = Array.isArray(role) ? role : [role];
 
         roleNames.forEach((r) => {
@@ -298,9 +307,7 @@ export class SimpleAccess {
         if (roles instanceof Promise) {
             return roles.then((rolesArray) => {
                 return this.getPermission(role, action, resource, rolesArray);
-            }) as CanReturnType<
-                ReturnType<typeof this._adapter.getRolesByName>
-            >;
+            }) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
         }
 
         return this.getPermission(
@@ -308,7 +315,7 @@ export class SimpleAccess {
             action,
             resource,
             roles
-        ) as CanReturnType<ReturnType<typeof this._adapter.getRolesByName>>;
+        ) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
     }
 
     /**

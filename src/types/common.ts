@@ -41,3 +41,15 @@ export interface Action {
     attributes?: Array<string>;
     scope?: Tuple;
 }
+
+export type TypeOfClassMethod<T, M extends keyof T> = T[M] extends (
+    ...args: any
+) => any
+    ? T[M]
+    : never;
+
+export type TypeOfClassMethodReturn<T, M extends keyof T> = T[M] extends (
+    ...args: any
+) => any
+    ? ReturnType<T[M]>
+    : never;

@@ -32,7 +32,7 @@ export class MemoryAdapter extends BaseAdapter<Array<Role>> {
     }
 
     getRolesByName(names: Array<string>): Array<Role> {
-        const result = [];
+        const result: Array<Role> = [];
 
         if (names == null) {
             throw new ErrorEx(
