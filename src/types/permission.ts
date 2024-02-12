@@ -1,4 +1,4 @@
-import { Tuple } from "./common";
+import { Tuple, Role } from "./common";
 import { Access, IAccessInfo } from "./access";
 import { Utils } from "../core";
 
@@ -54,3 +54,6 @@ export class Permission {
         return Utils.filter(this, data);
     }
 }
+
+export type CanReturnType<T extends Array<Role> | Promise<Array<Role>>> =
+    T extends Array<Role> ? Permission : Promise<Permission>;

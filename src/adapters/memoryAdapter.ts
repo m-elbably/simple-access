@@ -1,7 +1,7 @@
 import { BaseAdapter } from "./baseAdapter";
 import { Role, ErrorEx } from "../types";
 
-export class MemoryAdapter extends BaseAdapter {
+export class MemoryAdapter extends BaseAdapter<Array<Role>> {
     private _roles: Array<Role>;
     private _cache: { [k: string]: Role } = {};
 

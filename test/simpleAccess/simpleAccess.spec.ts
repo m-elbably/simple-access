@@ -5,7 +5,7 @@ import { ErrorEx, Role, Permission } from "../../src";
 import { Roles, ROLES, RESOURCES, PRODUCTS } from "../data";
 import { SimpleAccess, BaseAdapter, MemoryAdapter } from "../../src";
 
-let adapter: BaseAdapter;
+let adapter: BaseAdapter<Array<Role>>;
 let acl: SimpleAccess;
 
 before(() => {
