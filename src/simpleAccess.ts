@@ -296,18 +296,26 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
 
         // Get roles by their names
         const roles = this._adapter.getRolesByName(roleNames);
+
+        if (roles instanceof Promise) {
+            return roles.then((rolesArray: Role[]) => {
+                // Validate that all roles are available in roles list
+                if (rolesArray == null) {
+                    throw new ErrorEx(
+                        ErrorEx.VALIDATION_ERROR,
+                        `Invalid roles array, returned by adapter`
+                    );
+                }
+                return this.getPermission(role, action, resource, rolesArray);
+            }) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
+        }
+
         // Validate that all roles are available in roles list
         if (roles == null) {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
                 `Invalid roles array, returned by adapter`
             );
-        }
-
-        if (roles instanceof Promise) {
-            return roles.then((rolesArray) => {
-                return this.getPermission(role, action, resource, rolesArray);
-            }) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
         }
 
         return this.getPermission(
