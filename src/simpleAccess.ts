@@ -51,6 +51,21 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
     }
 
     /**
+     * Validate roles returned by the adapter
+     * @param {Array<Role>} roles Roles array
+     * @returns {void}
+     * @protected
+     */
+    protected validatedAdapterRoles(roles: Array<Role>): void {
+        if (roles == null) {
+            throw new ErrorEx(
+                ErrorEx.VALIDATION_ERROR,
+                `Invalid roles array, returned by adapter`
+            );
+        }
+    }
+
+    /**
      * Build hash table from one or more roles, merging resources and actions
      * @param {Array<Role>} roles Roles array
      * @returns {{[p: string]: Tuple}} Object with merged resources, including internal data like attributes
@@ -298,25 +313,15 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
         const roles = this._adapter.getRolesByName(roleNames);
 
         if (roles instanceof Promise) {
-            return roles.then((rolesArray: Role[]) => {
+            return roles.then((rolesArray: Array<Role>) => {
                 // Validate that all roles are available in roles list
-                if (rolesArray == null) {
-                    throw new ErrorEx(
-                        ErrorEx.VALIDATION_ERROR,
-                        `Invalid roles array, returned by adapter`
-                    );
-                }
+                this.validatedAdapterRoles(rolesArray);
                 return this.getPermission(role, action, resource, rolesArray);
             }) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
         }
 
         // Validate that all roles are available in roles list
-        if (roles == null) {
-            throw new ErrorEx(
-                ErrorEx.VALIDATION_ERROR,
-                `Invalid roles array, returned by adapter`
-            );
-        }
+        this.validatedAdapterRoles(roles);
 
         return this.getPermission(
             role,
@@ -332,7 +337,7 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
      * @param {Tuple} data
      * @returns {any}
      */
-    filter(permission: Permission, data: Tuple) {
+    filter(permission: Permission, data: Tuple): any {
         return Utils.filter(permission, data);
     }
 }
