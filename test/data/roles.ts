@@ -1,13 +1,16 @@
 import { RESOURCES } from "./resources";
-import { type Role } from "../../src";
+import { ACTIONS } from "./actions";
+import { Role } from "../../src";
 
-export const ROLES = {
-    ADMINISTRATOR: "administrator",
-    OPERATION: "operation",
-    SUPPORT: "support",
-};
+export enum ROLES {
+    ADMINISTRATOR = "administrator",
+    OPERATION = "operation",
+    SUPPORT = "support",
+}
 
-export const Roles: Role[] = [
+export type RoleDefinition = [`${ROLES}`, `${RESOURCES}`, `${ACTIONS}`];
+
+export const Roles: Role<RoleDefinition>[] = [
     {
         name: ROLES.ADMINISTRATOR,
         resources: [

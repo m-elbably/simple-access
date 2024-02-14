@@ -1,16 +1,18 @@
 import { BaseAdapter } from "./baseAdapter";
 import { Role, ErrorEx } from "../types";
 
-export class MemoryAdapter extends BaseAdapter<Array<Role>> {
-    private _roles: Array<Role>;
-    private _cache: { [k: string]: Role } = {};
+export class MemoryAdapter<
+    R extends [string, string, string]
+> extends BaseAdapter<R, Array<Role<R>>> {
+    private _roles: Array<Role<R>>;
+    private _cache: { [k: string]: Role<R> } = {};
 
-    constructor(roles: Array<Role>) {
+    constructor(roles: Array<Role<R>>) {
         super("MemoryAdapter");
         this.setRoles(roles);
     }
 
-    setRoles(roles: Array<Role>): void {
+    setRoles(roles: Array<Role<R>>): void {
         if (roles == null || !Array.isArray(roles) || roles.length === 0) {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
@@ -21,18 +23,18 @@ export class MemoryAdapter extends BaseAdapter<Array<Role>> {
         this._roles = roles;
         this._cache = {};
         // Cache roles by name
-        this._roles.forEach((role: Role) => {
+        this._roles.forEach((role: Role<R>) => {
             // this.validateGrant(grant, true);
             this._cache[role.name] = role;
         });
     }
 
-    getRoles(): Array<Role> {
+    getRoles(): Array<Role<R>> {
         return this._roles;
     }
 
-    getRolesByName(names: Array<string>): Array<Role> {
-        const result: Array<Role> = [];
+    getRolesByName(names: Array<Role<R>["name"]>): Array<Role<R>> {
+        const result: Array<Role<R>> = [];
 
         if (names == null) {
             throw new ErrorEx(

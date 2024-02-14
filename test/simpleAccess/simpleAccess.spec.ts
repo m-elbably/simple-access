@@ -1,15 +1,14 @@
 import { expect } from "chai";
 import { before, describe, it } from "mocha";
-
-import { ErrorEx, Role, Permission } from "../../src";
-import { Roles, ROLES, RESOURCES, PRODUCTS } from "../data";
+import { ErrorEx, Permission } from "../../src";
+import { RoleDefinition, Roles, ROLES, RESOURCES, PRODUCTS } from "../data";
 import { SimpleAccess, MemoryAdapter } from "../../src";
 
-let adapter: MemoryAdapter;
-let acl: SimpleAccess<MemoryAdapter>;
+let adapter: MemoryAdapter<RoleDefinition>;
+let acl: SimpleAccess<RoleDefinition, typeof adapter>;
 
 before(() => {
-    adapter = new MemoryAdapter(Roles as any[]);
+    adapter = new MemoryAdapter(Roles);
     acl = new SimpleAccess(adapter);
 });
 
@@ -58,6 +57,7 @@ describe("Test core functionalities", () => {
     it("Should return validation error, for missing role", async () => {
         const ROLE_NAME = "finance";
         try {
+            // @ts-ignore: Unreachable code error
             acl.can(ROLE_NAME, "create", "product");
         } catch (e) {
             expect(e)
@@ -96,6 +96,7 @@ describe("Test core functionalities", () => {
 
     it("Should return validation error object, if one or more roles are missing", async () => {
         try {
+            // @ts-ignore: Unreachable code error
             acl.can([ROLES.ADMINISTRATOR, "auditor"], "read", "product");
         } catch (e) {
             expect(e)
@@ -156,6 +157,7 @@ describe("Test permission object", () => {
 
 describe("Test can functionality with single role", () => {
     it("Should return permission with granted equal false when resource does not exist", async () => {
+        // @ts-ignore: Unreachable code error
         const permission = acl.can([ROLES.OPERATION], "delete", "languages");
         const { granted } = permission;
         expect(granted).to.be.equal(false);
@@ -176,6 +178,7 @@ describe("Test can functionality with single role", () => {
     it("Should return permission with granted equal true when subject has access to all actions on resource", async () => {
         const permission = acl.can(
             [ROLES.ADMINISTRATOR],
+            // @ts-ignore: Unreachable code error
             "readAll",
             RESOURCES.FILE
         );
@@ -222,7 +225,7 @@ describe("Test can functionality with overlapped roles - resources", () => {
     it("Should return permission object with merged (union) resources", async () => {
         const { grants } = permission;
         const resources: { [k: string]: any } = {};
-        const roles = acl.adapter.getRolesByName(ROLE_NAME) as Role[];
+        const roles = acl.adapter.getRolesByName(ROLE_NAME);
 
         roles.forEach((role) => {
             role.resources.forEach((resource) => {
@@ -247,7 +250,7 @@ describe("Test can functionality with overlapped roles - actions", () => {
         const {
             grants: { [RESOURCE_NAME]: gResource },
         } = permission;
-        const roles = acl.adapter.getRolesByName(ROLE_NAME) as Role[];
+        const roles = acl.adapter.getRolesByName(ROLE_NAME);
         const actions: { [k: string]: any } = {};
 
         roles.forEach((role) => {
@@ -285,6 +288,7 @@ describe("Test can functionality with overlapped roles - actions", () => {
     it("Should return permission object with the most permissive action applied and granted access to custom action", async () => {
         const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
+            // @ts-ignore: Unreachable code error
             "print",
             RESOURCES.CONFIGURATION
         );
@@ -470,7 +474,7 @@ describe("Test can functionality with overlapped roles - scope", () => {
         const {
             grants: { [RESOURCE_NAME]: resource },
         } = permission;
-        const roles = acl.adapter.getRolesByName(ROLE_NAME) as Role[];
+        const roles = acl.adapter.getRolesByName(ROLE_NAME);
         const scope: any = {};
 
         roles.forEach((role) => {

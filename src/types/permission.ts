@@ -50,10 +50,12 @@ export class Permission {
      * @param {Tuple} data
      * @returns {any}
      */
-    filter(data: Tuple) {
+    filter(data: Tuple): any {
         return Utils.filter(this, data);
     }
 }
 
-export type CanReturnType<T extends Array<Role> | Promise<Array<Role>>> =
-    T extends Array<Role> ? Permission : Promise<Permission>;
+export type CanReturnType<
+    R extends [string, string, string],
+    T extends Array<Role<R>> | Promise<Array<Role<R>>>
+> = T extends Array<Role<R>> ? Permission : Promise<Permission>;
