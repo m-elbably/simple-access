@@ -119,29 +119,48 @@ You can implement your own roles adapter by extending `BaseAdapter` class and im
 ```typescript
 import { BaseAdapter, Role, ErrorEx } from "simple-access";
 
-export class MemoryAdapter extends BaseAdapter<Array<Role>> {
-    private _roles: Array<Role>;
-    private _cache: { [k: string]: Role } = {};
+export class MemoryAdapter<
+    R extends [string, string, string]
+> extends BaseAdapter<R, Array<Role<R>>> {
+    private _roles: Array<Role<R>>;
+    private _cache: { [k: string]: Role<R> } = {};
 
-    constructor(roles?: Array<Role>) {
+    constructor(roles: Array<Role<R>>) {
         super("MemoryAdapter");
-        this.addRoles(roles);
+        this.setRoles(roles);
     }
 
-    setRoles(roles: Array<Role>): void {
+    setRoles(roles: Array<Role<R>>): void {
+        if (roles == null || !Array.isArray(roles) || roles.length === 0) {
+            throw new ErrorEx(
+                ErrorEx.VALIDATION_ERROR,
+                `Missing/Invalid roles array in "${this.constructor.name}"`
+            );
+        }
+
         this._roles = roles;
         this._cache = {};
-        this._roles.forEach((role: Role) => {
+        // Cache roles by name
+        this._roles.forEach((role: Role<R>) => {
+            // this.validateGrant(grant, true);
             this._cache[role.name] = role;
         });
     }
 
-    getRoles(): Array<Role> {
+    getRoles(): Array<Role<R>> {
         return this._roles;
     }
 
-    getRolesByName(names: Array<string>): Array<Role> {
-        const result = [];
+    getRolesByName(names: Array<Role<R>["name"]>): Array<Role<R>> {
+        const result: Array<Role<R>> = [];
+
+        if (names == null) {
+            throw new ErrorEx(
+                ErrorEx.VALIDATION_ERROR,
+                `Roles names array can not be null or undefined`
+            );
+        }
+
         for (let i = 0; i < names.length; i += 1) {
             if (this._cache[names[i]] != null) {
                 result.push(this._cache[names[i]]);
@@ -166,7 +185,14 @@ export class MemoryAdapter extends BaseAdapter<Array<Role>> {
 
 Let's use the following set of roles as an example:
 ```typescript
-const roles = [
+import type { Role } from "simple-access";
+
+type RoleNamesType = "administrator" | "operation";
+type ResourceNamesType = "product" | "order" | "file";
+type ActionNamesType = "create" | "read" | "update" | "delete"
+type RoleDefinition = [RoleNamesType, ResourceNamesType, ActionNamesType]
+
+const roles: Role<RoleDefinition>[] = [
   {
     "name": "administrator",
     "resources": [
@@ -209,16 +235,101 @@ You can check access using `can` method:
 <br>
 `can(role: Array<string> | string,  action: string, resource: string): Promise<Permission> | Permission` 
 
-Check subject (with "operation" role) permission to "read" the resource "order", please note that `can` method return type depends on the return type of `getRolesByName` method in the  adaptor you are using. In the following example the `getRolesByName` method in the `MemoryAdaptor` return type is `Array<Role>` 
+Check subject (with "operation" role) permission to "read" the resource "order", please note that `can` method return type depends on the return type of `getRolesByName` method in the  adaptor you are using. In the following example the `getRolesByName` method in the `MemoryAdaptor` return type is `Array<Role>`
+
 ```typescript
-import {SimpleAccess, MemoryAdapter} from "simple-access";
+import {
+    type Role,
+    SimpleAccess,
+    MemoryAdapter
+} from "simple-access";
+import type {
+    RoleDefinition
+} from './roles';
+
+type RoleNamesType =
+    "administrator"
+    | "operation";
+type ResourceNamesType =
+    "product"
+    | "order"
+    | "file";
+type ActionNamesType =
+    "create"
+    | "read"
+    | "update"
+    | "delete"
+type RoleDefinition = [RoleNamesType, ResourceNamesType, ActionNamesType]
+
+const roles: Role<RoleDefinition>[] = [
+    {
+        "name": "administrator",
+        "resources": [
+            {
+                "name": "product",
+                "actions": ["*"]
+            },
+            {
+                "name": "order",
+                "actions": ["*"]
+            },
+            {
+                "name": "file",
+                "actions": ["*"]
+            }
+        ]
+    },
+    {
+        "name": "operation",
+        "resources": [
+            {
+                "name": "product",
+                "actions": [
+                    {
+                        "name": "create",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "read",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "update",
+                        "attributes": ["*", "!history"]
+                    },
+                    {
+                        "name": "delete",
+                        "attributes": ["*"]
+                    }
+                ]
+            },
+            {
+                "name": "order",
+                "actions": [
+                    {
+                        "name": "create",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "read",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "update",
+                        "attributes": ["*"]
+                    }
+                ]
+            }
+        ]
+    }
+];
 
 const adapter = new MemoryAdapter(roles);
-const simpleAccess = new SimpleAccess(adapter);
+const simpleAccess = new SimpleAccess<RoleDefinition, typeof adapter>(adapter);
 
 const permission = simpleAccess.can("operation", "read", "order");
-if(permission.granted) {
-	console.log("Permissin Granted");
+if (permission.granted) {
+    console.log("Permissin Granted");
 }
 ```
 
@@ -282,10 +393,94 @@ The returned permission
 
 Example:
 ```typescript
-import {SimpleAccess, MemoryAdapter} from "simple-access";
+import {
+    type Role,
+    SimpleAccess,
+    MemoryAdapter
+} from "simple-access";
+import type {
+    RoleDefinition
+} from './roles';
+
+type RoleNamesType =
+    "administrator"
+    | "operation";
+type ResourceNamesType =
+    "product"
+    | "order"
+    | "file";
+type ActionNamesType =
+    "create"
+    | "read"
+    | "update"
+    | "delete"
+type RoleDefinition = [RoleNamesType, ResourceNamesType, ActionNamesType]
+
+const roles: Role<RoleDefinition>[] = [
+    {
+        "name": "administrator",
+        "resources": [
+            {
+                "name": "product",
+                "actions": ["*"]
+            },
+            {
+                "name": "order",
+                "actions": ["*"]
+            },
+            {
+                "name": "file",
+                "actions": ["*"]
+            }
+        ]
+    },
+    {
+        "name": "operation",
+        "resources": [
+            {
+                "name": "product",
+                "actions": [
+                    {
+                        "name": "create",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "read",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "update",
+                        "attributes": ["*", "!history"]
+                    },
+                    {
+                        "name": "delete",
+                        "attributes": ["*"]
+                    }
+                ]
+            },
+            {
+                "name": "order",
+                "actions": [
+                    {
+                        "name": "create",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "read",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "update",
+                        "attributes": ["*"]
+                    }
+                ]
+            }
+        ]
+    }
+];
 
 const adapter = new MemoryAdapter(roles);
-const simpleAccess = new SimpleAccess(adapter);
+const simpleAccess = new SimpleAccess<RoleDefinition, typeof adapter>(adapter);
 
 const permission = simpleAccess.can(["operation", "support"], "read", "order");
 
@@ -304,10 +499,94 @@ You can do this using `filter` function:<br>
 
 **Example:**
 ```typescript
-import {SimpleAccess, MemoryAdapter} from "simple-access";
+import {
+    type Role,
+    SimpleAccess,
+    MemoryAdapter
+} from "simple-access";
+import type {
+    RoleDefinition
+} from './roles';
+
+type RoleNamesType =
+    "administrator"
+    | "operation";
+type ResourceNamesType =
+    "product"
+    | "order"
+    | "file";
+type ActionNamesType =
+    "create"
+    | "read"
+    | "update"
+    | "delete"
+type RoleDefinition = [RoleNamesType, ResourceNamesType, ActionNamesType]
+
+const roles: Role<RoleDefinition>[] = [
+    {
+        "name": "administrator",
+        "resources": [
+            {
+                "name": "product",
+                "actions": ["*"]
+            },
+            {
+                "name": "order",
+                "actions": ["*"]
+            },
+            {
+                "name": "file",
+                "actions": ["*"]
+            }
+        ]
+    },
+    {
+        "name": "operation",
+        "resources": [
+            {
+                "name": "product",
+                "actions": [
+                    {
+                        "name": "create",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "read",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "update",
+                        "attributes": ["*", "!history"]
+                    },
+                    {
+                        "name": "delete",
+                        "attributes": ["*"]
+                    }
+                ]
+            },
+            {
+                "name": "order",
+                "actions": [
+                    {
+                        "name": "create",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "read",
+                        "attributes": ["*"]
+                    },
+                    {
+                        "name": "update",
+                        "attributes": ["*"]
+                    }
+                ]
+            }
+        ]
+    }
+];
 
 const adapter = new MemoryAdapter(roles);
-const simpleAccess = new SimpleAccess(adapter);
+const simpleAccess = new SimpleAccess<RoleDefinition, typeof adapter>(adapter);
 const resource = {
     "authorId": 1002,
     "price": 75.08

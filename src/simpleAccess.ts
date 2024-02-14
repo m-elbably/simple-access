@@ -22,7 +22,7 @@ const ALL = "*";
  */
 export class SimpleAccess<
     R extends [string, string, string],
-    T extends BaseAdapter<[any, any, any], any>
+    T extends BaseAdapter<R, any>
 > {
     constructor(private readonly _adapter: T) {
         if (this._adapter == null) {
