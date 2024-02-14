@@ -236,7 +236,7 @@ export class SimpleAccess<
      *
      */
     private getPermission(
-        role: Array<string> | string,
+        role: Array<R[0]> | R[0],
         action: R[2],
         resource: R[1],
         roles: Array<Role<R>>
