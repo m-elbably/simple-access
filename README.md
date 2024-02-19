@@ -607,6 +607,12 @@ if(permission.granted) {
 }
 ```
 
+## Contributors
+
+<a href="https://github.com/m-elbably/simple-access/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=m-elbably/simple-access"  alt="contributors"/>
+</a>
+
 #### License
 MIT
 
