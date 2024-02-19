@@ -4,7 +4,7 @@ import { SimpleAccess, Role, MemoryAdapter, ErrorEx } from "../../src";
 import { Roles } from "../data";
 
 let adapter: MemoryAdapter;
-let acl: SimpleAccess;
+let acl: SimpleAccess<MemoryAdapter>;
 
 before(() => {
     adapter = new MemoryAdapter(Roles as Role[]);

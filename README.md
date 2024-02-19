@@ -8,11 +8,13 @@ Attribute-Role-Based Hybrid Access Control Library
 [![Coverage Status](https://coveralls.io/repos/github/m-elbably/simple-access/badge.svg?branch=master&t=pKbxsM)](https://coveralls.io/github/m-elbably/simple-access?branch=master)
 [![License](https://img.shields.io/github/license/m-elbably/simple-access.svg)](https://raw.githubusercontent.com/m-elbably/simple-access/master/LICENSE)
 
-## Installation
-`npm install simple-access --save`
-
 > **V2.0 Breaking Changes**<br>
 > The `conditions` property has been removed from the `action` object due to its side effects. Instead, you can use the `scope` property to add custom attributes and validate them using application logic.
+
+## Installation
+```bash
+npm install simple-access --save
+````
 
 ## Features
 - Hybrid access control with the best features from RBAC & ABAC
@@ -55,7 +57,9 @@ Role is the level of access given to subject (user or business entity) when this
 
 > Subject (User or business entity) can have one or more roles assigned based on their responsibilities and qualifications.
 
-![Role Structure](res/images/role.svg)
+<p align="center">
+<img width="600" src="res/images/role.svg" alt="Role Structure">
+</p>
 
 **Role Schema**
 ```json
@@ -82,7 +86,9 @@ Role is the level of access given to subject (user or business entity) when this
 
 Permission describes the way in which a subject may access a resource
 
-![Permission Structure](res/images/permission.svg)
+<p align="center">
+<img width="600" src="res/images/permission.svg" alt="Permission Structure">
+</p>
 
 **Permission Schema**
 ```json
@@ -106,13 +112,14 @@ This library does not handle roles storage and management (Not the library conce
 Memory adapter is a built-in roles adapter that stores all roles data into memory with simple structure.
 
 ### Implement Custom Roles Adapter
-You can implement your own roles adapter by extending `BaseAdapter` class and implement `getRolesByName` function.
+You can implement your own roles adapter by extending `BaseAdapter` class and implement `getRolesByName` method, considering that the `getRolesByName` can return `Array<Role>` or `Promise<Array<Role>>` and you can define the return type when creating your adapter class.
+
 
 **Example:**
 ```typescript
 import { BaseAdapter, Role, ErrorEx } from "simple-access";
 
-export class MemoryAdapter extends BaseAdapter {
+export class MemoryAdapter extends BaseAdapter<Array<Role>> {
     private _roles: Array<Role>;
     private _cache: { [k: string]: Role } = {};
 
@@ -148,12 +155,14 @@ export class MemoryAdapter extends BaseAdapter {
 
 ## How Simple Access Works?
 
+<p align="center">
+<img width="800" src="res/images/how-it-works.svg" alt="How Simple Access Works">
+</p>
+
 - **Subject** (user or business entity) assigned one or more roles
 - **Subject** request access to a resource
 - **Simple Access** check **subject** set of roles to validate access to provided resource and action
 - **Simple Access** returns permission object
-
-![How Simple Access Works](res/images/how-it-works.svg)
 
 Let's use the following set of roles as an example:
 ```typescript
@@ -196,17 +205,18 @@ const roles = [
 
 ### Validating Access With Single Role
 
-You can check access using `can` function:<br>
-`can(role: Array<string> | string,  action: string, resource: string): Promise<Permission>`
+You can check access using `can` method:
+<br>
+`can(role: Array<string> | string,  action: string, resource: string): Promise<Permission> | Permission` 
 
-Check subject (with "operation" role) permission to "read" the resource "order"
+Check subject (with "operation" role) permission to "read" the resource "order", please note that `can` method return type depends on the return type of `getRolesByName` method in the  adaptor you are using. In the following example the `getRolesByName` method in the `MemoryAdaptor` return type is `Array<Role>` 
 ```typescript
 import {SimpleAccess, MemoryAdapter} from "simple-access";
 
-const adapter = new SimpleAdapter(roles);
+const adapter = new MemoryAdapter(roles);
 const simpleAccess = new SimpleAccess(adapter);
 
-const permission = await simpleAccess.can("operation", "read", "order");
+const permission = simpleAccess.can("operation", "read", "order");
 if(permission.granted) {
 	console.log("Permissin Granted");
 }
@@ -215,22 +225,28 @@ if(permission.granted) {
 The returned permission
 ```json
 {
-	"granted": true,
-	"access": {
-		"roles": ["operation"],
-		"action": "read",
-		"resource": "order"
-	},
-	"grants": {
-		"product": {
-			"create": {
-				"name": "create",
-				"attributes": ["*"]
-			}
-		}
-	},
-	"attributes": ["*"],
-	"scope": {}
+    "granted": true,
+    "access": {
+        "roles": [
+            "operation"
+        ],
+        "action": "read",
+        "resource": "order"
+    },
+    "grants": {
+        "product": {
+            "create": {
+                "name": "create",
+                "attributes": [
+                    "*"
+                ]
+            }
+        }
+    },
+    "attributes": [
+        "*"
+    ],
+    "scope": {}
 }
 ```
 
@@ -268,13 +284,13 @@ Example:
 ```typescript
 import {SimpleAccess, MemoryAdapter} from "simple-access";
 
-const adapter = new SimpleAdapter(roles);
+const adapter = new MemoryAdapter(roles);
 const simpleAccess = new SimpleAccess(adapter);
 
-const permission = await simpleAccess.can(["operation", "support"], "read", "order");
+const permission = simpleAccess.can(["operation", "support"], "read", "order");
 
 if(permission.granted) {
-	console.log("Permissin Granted");
+    console.log("Permissin Granted");
 }
 ```
 
@@ -290,14 +306,15 @@ You can do this using `filter` function:<br>
 ```typescript
 import {SimpleAccess, MemoryAdapter} from "simple-access";
 
-const adapter = new SimpleAdapter(roles);
+const adapter = new MemoryAdapter(roles);
 const simpleAccess = new SimpleAccess(adapter);
 const resource = {
     "authorId": 1002,
     "price": 75.08
 };
 
-const permission = await simpleAccess.can("operation", "read", "order");
+const permission = simpleAccess.can("operation", "read", "order");
+
 if(permission.granted) {
     const filteredResource = simpleAccess.filter(permission, resource);
 }
@@ -305,7 +322,7 @@ if(permission.granted) {
 
 For simplicity and flexibility you can also call `filter` from **Permission** object
 ```typescript
-const permission = await simpleAccess.can("operation", "read", "order");
+const permission = simpleAccess.can("operation", "read", "order");
 if(permission.granted) {
     const filteredResource = permission.filter(resource);
 }

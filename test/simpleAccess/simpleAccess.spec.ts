@@ -3,10 +3,10 @@ import { before, describe, it } from "mocha";
 
 import { ErrorEx, Role, Permission } from "../../src";
 import { Roles, ROLES, RESOURCES, PRODUCTS } from "../data";
-import { SimpleAccess, BaseAdapter, MemoryAdapter } from "../../src";
+import { SimpleAccess, MemoryAdapter } from "../../src";
 
-let adapter: BaseAdapter;
-let acl: SimpleAccess;
+let adapter: MemoryAdapter;
+let acl: SimpleAccess<MemoryAdapter>;
 
 before(() => {
     adapter = new MemoryAdapter(Roles as any[]);
@@ -46,7 +46,7 @@ describe("Test core functionalities", () => {
         );
 
         try {
-            await simpleAccess.can([ROLES.SUPPORT], "ready", RESOURCES.PRODUCT);
+            simpleAccess.can([ROLES.SUPPORT], "ready", RESOURCES.PRODUCT);
         } catch (e) {
             expect(e)
                 .to.be.instanceOf(Error)
@@ -58,7 +58,7 @@ describe("Test core functionalities", () => {
     it("Should return validation error, for missing role", async () => {
         const ROLE_NAME = "finance";
         try {
-            await acl.can(ROLE_NAME, "create", "product");
+            acl.can(ROLE_NAME, "create", "product");
         } catch (e) {
             expect(e)
                 .to.be.instanceOf(Error)
@@ -74,7 +74,7 @@ describe("Test core functionalities", () => {
 
     it("Should return validation error object, if role is invalid", async () => {
         try {
-            await acl.can(undefined, "read", "product");
+            acl.can(undefined, "read", "product");
         } catch (e) {
             expect(e)
                 .to.be.instanceOf(Error)
@@ -85,7 +85,7 @@ describe("Test core functionalities", () => {
 
     it("Should return validation error object, if one or more roles are invalid", async () => {
         try {
-            await acl.can([ROLES.ADMINISTRATOR, undefined], "read", "product");
+            acl.can([ROLES.ADMINISTRATOR, undefined], "read", "product");
         } catch (e) {
             expect(e)
                 .to.be.instanceOf(Error)
@@ -96,7 +96,7 @@ describe("Test core functionalities", () => {
 
     it("Should return validation error object, if one or more roles are missing", async () => {
         try {
-            await acl.can([ROLES.ADMINISTRATOR, "auditor"], "read", "product");
+            acl.can([ROLES.ADMINISTRATOR, "auditor"], "read", "product");
         } catch (e) {
             expect(e)
                 .to.be.instanceOf(Error)
@@ -113,7 +113,7 @@ describe("Test permission object", () => {
     const RESOURCE_NAME = RESOURCES.ORDER;
 
     before(async () => {
-        permission = await acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
+        permission = acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
     });
 
     it("Should return permission object", async () => {
@@ -156,37 +156,25 @@ describe("Test permission object", () => {
 
 describe("Test can functionality with single role", () => {
     it("Should return permission with granted equal false when resource does not exist", async () => {
-        const permission = await acl.can(
-            [ROLES.OPERATION],
-            "delete",
-            "languages"
-        );
+        const permission = acl.can([ROLES.OPERATION], "delete", "languages");
         const { granted } = permission;
         expect(granted).to.be.equal(false);
     });
 
     it("Should return permission with granted equal false when action is not allowed", async () => {
-        const permission = await acl.can(
-            [ROLES.OPERATION],
-            "delete",
-            RESOURCES.FILE
-        );
+        const permission = acl.can([ROLES.OPERATION], "delete", RESOURCES.FILE);
         const { granted } = permission;
         expect(granted).to.be.equal(false);
     });
 
     it("Should return permission with granted equal true when action is allowed on resource", async () => {
-        const permission = await acl.can(
-            [ROLES.OPERATION],
-            "read",
-            RESOURCES.ORDER
-        );
+        const permission = acl.can([ROLES.OPERATION], "read", RESOURCES.ORDER);
         const { granted } = permission;
         expect(granted).to.be.equal(true);
     });
 
     it("Should return permission with granted equal true when subject has access to all actions on resource", async () => {
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR],
             "readAll",
             RESOURCES.FILE
@@ -203,7 +191,7 @@ describe("Test can functionality with overlapped roles - permission access", () 
     const RESOURCE_NAME = RESOURCES.PRODUCT;
 
     before(async () => {
-        permission = await acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
+        permission = acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
     });
 
     it("Should return permission object with granted equal true", async () => {
@@ -228,7 +216,7 @@ describe("Test can functionality with overlapped roles - resources", () => {
     const RESOURCE_NAME = RESOURCES.PRODUCT;
 
     before(async () => {
-        permission = await acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
+        permission = acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
     });
 
     it("Should return permission object with merged (union) resources", async () => {
@@ -250,7 +238,7 @@ describe("Test can functionality with overlapped roles - actions", () => {
     it("Should return permission object with merged (union) actions inside resource", async () => {
         const ROLE_NAME = [ROLES.ADMINISTRATOR, ROLES.OPERATION];
         const RESOURCE_NAME = RESOURCES.PRODUCT;
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             "read",
             RESOURCES.PRODUCT
@@ -280,7 +268,7 @@ describe("Test can functionality with overlapped roles - actions", () => {
     });
 
     it("Should return permission object with the most permissive action applied", async () => {
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             "read",
             RESOURCES.CONFIGURATION
@@ -295,7 +283,7 @@ describe("Test can functionality with overlapped roles - actions", () => {
     });
 
     it("Should return permission object with the most permissive action applied and granted access to custom action", async () => {
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             "print",
             RESOURCES.CONFIGURATION
@@ -315,7 +303,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
         const ACTION_NAME = "read";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
         const RESULT = ["*", "!history"];
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
             RESOURCE_NAME
@@ -341,7 +329,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
     it("Should return permission object with all allowed attributes in action - filtered all attributes", async () => {
         const ACTION_NAME = "create";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
             RESOURCE_NAME
@@ -368,7 +356,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
         const ACTION_NAME = "update";
         const RESOURCE_NAME = RESOURCES.ORDER;
         const RESULT = ["status", "items", "delivery"];
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.OPERATION, ROLES.SUPPORT],
             ACTION_NAME,
             RESOURCE_NAME
@@ -395,7 +383,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
         const ACTION_NAME = "read";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
         const RESULT = ["*", "!history"];
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
             RESOURCE_NAME
@@ -422,7 +410,7 @@ describe("Test can functionality with overlapped roles - attributes", () => {
         const ACTION_NAME = "update";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
         const RESULT = ["*", "!history"];
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
             RESOURCE_NAME
@@ -450,7 +438,7 @@ describe("Test can functionality with overlapped roles - scope", () => {
     it("Should return permission object with the most permissive scope applied", async () => {
         const ACTION_NAME = "read";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
-        const permission = await acl.can(
+        const permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.OPERATION],
             ACTION_NAME,
             RESOURCE_NAME
@@ -477,7 +465,7 @@ describe("Test can functionality with overlapped roles - scope", () => {
         const ROLE_NAME = [ROLES.OPERATION, ROLES.SUPPORT];
         const ACTION_NAME = "read";
         const RESOURCE_NAME = RESOURCES.PRODUCT;
-        const permission = await acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
+        const permission = acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
 
         const {
             grants: { [RESOURCE_NAME]: resource },
@@ -522,7 +510,7 @@ describe("Test data filtration base on permission", () => {
     let permission: Permission;
 
     before(async () => {
-        permission = await acl.can([ROLES.SUPPORT], "read", RESOURCES.PRODUCT);
+        permission = acl.can([ROLES.SUPPORT], "read", RESOURCES.PRODUCT);
     });
 
     it("Should return true if user can read provided resource", async () => {
@@ -537,7 +525,7 @@ describe("Test permission bounded functionalities", () => {
     let permission: Permission;
 
     before(async () => {
-        permission = await acl.can(
+        permission = acl.can(
             [ROLES.ADMINISTRATOR, ROLES.SUPPORT],
             "read",
             RESOURCES.PRODUCT

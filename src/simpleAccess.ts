@@ -1,6 +1,13 @@
 import * as _ from "lodash";
 import Ajv from "ajv";
-import { Tuple, Role, ErrorEx, Action } from "./types";
+import {
+    Tuple,
+    Role,
+    ErrorEx,
+    Action,
+    CanReturnType,
+    TypeOfClassMethodReturn,
+} from "./types";
 import { BaseAdapter } from "./adapters";
 import { Utils } from "./core";
 import { PermissionOptions, Permission } from "./types";
@@ -8,8 +15,13 @@ import { roleSchema } from "./validation";
 
 const ALL = "*";
 
-export class SimpleAccess {
-    constructor(private readonly _adapter: BaseAdapter) {
+/**
+ * SimpleAccess Adapter Class
+ * @class
+ * @typeParam T - Type of Adapter
+ */
+export class SimpleAccess<T extends BaseAdapter<any>> {
+    constructor(private readonly _adapter: T) {
         if (this._adapter == null) {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
@@ -34,6 +46,21 @@ export class SimpleAccess {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
                 `Invalid role object schema${roleContent}`
+            );
+        }
+    }
+
+    /**
+     * Validate roles returned by the adapter
+     * @param {Array<Role>} roles Roles array
+     * @returns {void}
+     * @protected
+     */
+    protected validatedAdapterRoles(roles: Array<Role>): void {
+        if (roles == null) {
+            throw new ErrorEx(
+                ErrorEx.VALIDATION_ERROR,
+                `Invalid roles array, returned by adapter`
             );
         }
     }
@@ -189,23 +216,26 @@ export class SimpleAccess {
         return resources;
     }
 
-    get adapter(): BaseAdapter {
+    get adapter(): T {
         return this._adapter;
     }
 
     /**
-     * Check the ability of accessing a resource through one or more roles (assigned to subject)
-     * and the ability of executing specific action on this resource
-     * @param {Array<string> | string} role One or more roles
-     * @param {Array<string> | string} action Action name (Like "create")
-     * @param {string} resource Resource name (Like "order")
-     * @returns {Promise<Permission>}
+     * Build permission
+     * @param {Array<string> | string} role
+     * @param {string} action
+     * @param {string} resource
+     * @param {Array<Role>} roles Roles array
+     * @returns {PermissionOptions}
+     * @private
+     *
      */
-    async can(
+    private getPermission(
         role: Array<string> | string,
         action: string,
-        resource: string
-    ): Promise<Permission> {
+        resource: string,
+        roles: Array<Role>
+    ): Permission {
         const roleNames = Array.isArray(role) ? role : [role];
         const pInfo: PermissionOptions = {
             granted: false,
@@ -214,25 +244,6 @@ export class SimpleAccess {
             attributes: [],
             scope: {},
         };
-
-        roleNames.forEach((r) => {
-            if (r == null) {
-                throw new ErrorEx(
-                    ErrorEx.VALIDATION_ERROR,
-                    `One or more roles are not valid`
-                );
-            }
-        });
-
-        // Get roles by their names
-        const roles = await this._adapter.getRolesByName(roleNames);
-        // Validate that all roles are available in roles list
-        if (roles == null) {
-            throw new ErrorEx(
-                ErrorEx.VALIDATION_ERROR,
-                `Invalid roles array, returned by adapter`
-            );
-        }
 
         if (roles.length !== roleNames.length) {
             const diff = _.difference(
@@ -274,12 +285,59 @@ export class SimpleAccess {
     }
 
     /**
+     * Check the ability of accessing a resource through one or more roles (assigned to subject)
+     * and the ability of executing specific action on this resource
+     * @method
+     * @param {Array<string> | string} role One or more roles
+     * @param {Array<string> | string} action Action name (Like "create")
+     * @param {string} resource Resource name (Like "order")
+     * @returns {Permission | Promise<Permission>}
+     */
+    can(
+        role: Array<string> | string,
+        action: string,
+        resource: string
+    ): CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">> {
+        const roleNames = Array.isArray(role) ? role : [role];
+
+        roleNames.forEach((r) => {
+            if (r == null) {
+                throw new ErrorEx(
+                    ErrorEx.VALIDATION_ERROR,
+                    `One or more roles are not valid`
+                );
+            }
+        });
+
+        // Get roles by their names
+        const roles = this._adapter.getRolesByName(roleNames);
+
+        if (roles instanceof Promise) {
+            return roles.then((rolesArray: Array<Role>) => {
+                // Validate that all roles are available in roles list
+                this.validatedAdapterRoles(rolesArray);
+                return this.getPermission(role, action, resource, rolesArray);
+            }) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
+        }
+
+        // Validate that all roles are available in roles list
+        this.validatedAdapterRoles(roles);
+
+        return this.getPermission(
+            role,
+            action,
+            resource,
+            roles
+        ) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
+    }
+
+    /**
      * Filter data based on fields within current permission
      * @param permission
      * @param {Tuple} data
      * @returns {any}
      */
-    filter(permission: Permission, data: Tuple) {
+    filter(permission: Permission, data: Tuple): any {
         return Utils.filter(permission, data);
     }
 }
