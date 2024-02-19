@@ -1,13 +1,13 @@
 import { expect } from "chai";
 import { before, describe, it } from "mocha";
-import { SimpleAccess, Role, MemoryAdapter, ErrorEx } from "../../src";
-import { Roles } from "../data";
+import { SimpleAccess, MemoryAdapter, ErrorEx } from "../../src";
+import { RoleDefinition, Roles } from "../data";
 
-let adapter: MemoryAdapter;
-let acl: SimpleAccess<MemoryAdapter>;
+let adapter: MemoryAdapter<RoleDefinition>;
+let acl: SimpleAccess<RoleDefinition, typeof adapter>;
 
 before(() => {
-    adapter = new MemoryAdapter(Roles as Role[]);
+    adapter = new MemoryAdapter(Roles);
     acl = new SimpleAccess(adapter);
 });
 
@@ -33,6 +33,7 @@ describe("Memory adapter functionalities", () => {
     });
 
     it("Should return empty array because role(s) does not exists", async () => {
+        // @ts-ignore: Unreachable code error
         const result = adapter.getRolesByName(["none"]);
         expect(result).to.be.an("array").with.lengthOf(0);
     });

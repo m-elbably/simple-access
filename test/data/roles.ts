@@ -1,13 +1,16 @@
 import { RESOURCES } from "./resources";
-import { type Role } from "../../src";
+import { ACTIONS } from "./actions";
+import { Role } from "../../src";
 
-export const ROLES = {
-    ADMINISTRATOR: "administrator",
-    OPERATION: "operation",
-    SUPPORT: "support",
-};
+export enum ROLES {
+    ADMINISTRATOR = "administrator",
+    OPERATION = "operation",
+    SUPPORT = "support",
+}
 
-export const Roles: Role[] = [
+export type RoleDefinition = [`${ROLES}`, `${RESOURCES}`, `${ACTIONS}`];
+
+export const Roles: Role<RoleDefinition>[] = [
     {
         name: ROLES.ADMINISTRATOR,
         resources: [
@@ -22,26 +25,26 @@ export const Roles: Role[] = [
             {
                 name: RESOURCES.USER,
                 actions: [
-                    { name: "create", attributes: ["*"] },
-                    { name: "read", attributes: ["*"] },
-                    { name: "update", attributes: ["*"] },
+                    { name: ACTIONS.CREATE, attributes: ["*"] },
+                    { name: ACTIONS.READ, attributes: ["*"] },
+                    { name: ACTIONS.UPDATE, attributes: ["*"] },
                 ],
             },
             {
                 name: RESOURCES.PRODUCT,
                 actions: [
-                    { name: "create", attributes: ["*", "active"] },
-                    { name: "read", attributes: ["active"] },
-                    { name: "update", attributes: ["*", "!history"] },
-                    { name: "delete", attributes: ["*"] },
+                    { name: ACTIONS.CREATE, attributes: ["*", "active"] },
+                    { name: ACTIONS.READ, attributes: ["active"] },
+                    { name: ACTIONS.UPDATE, attributes: ["*", "!history"] },
+                    { name: ACTIONS.DELETE, attributes: ["*"] },
                 ],
             },
             {
                 name: RESOURCES.ORDER,
                 actions: [
-                    { name: "create", attributes: ["*"] },
-                    { name: "read", attributes: ["*"] },
-                    { name: "update", attributes: ["*"] },
+                    { name: ACTIONS.CREATE, attributes: ["*"] },
+                    { name: ACTIONS.READ, attributes: ["*"] },
+                    { name: ACTIONS.UPDATE, attributes: ["*"] },
                 ],
             },
         ],
@@ -53,22 +56,22 @@ export const Roles: Role[] = [
                 name: RESOURCES.CONFIGURATION,
                 actions: [
                     {
-                        name: "read",
+                        name: ACTIONS.READ,
                         attributes: ["*"],
                     },
-                    { name: "update", attributes: ["status", "items"] },
+                    { name: ACTIONS.UPDATE, attributes: ["status", "items"] },
                 ],
             },
             {
                 name: RESOURCES.ORDER,
                 actions: [
                     {
-                        name: "read",
+                        name: ACTIONS.READ,
                         attributes: ["*"],
                     },
-                    { name: "create", attributes: ["*"] },
+                    { name: ACTIONS.CREATE, attributes: ["*"] },
                     {
-                        name: "update",
+                        name: ACTIONS.UPDATE,
                         attributes: ["status", "items", "delivery"],
                     },
                 ],
@@ -76,16 +79,16 @@ export const Roles: Role[] = [
             {
                 name: RESOURCES.PRODUCT,
                 actions: [
-                    { name: "create", attributes: ["*", "active"] },
+                    { name: ACTIONS.CREATE, attributes: ["*", "active"] },
                     {
-                        name: "read",
+                        name: ACTIONS.READ,
                         attributes: ["*", "!history"],
                         scope: {
                             valid: true,
                         },
                     },
                     {
-                        name: "update",
+                        name: ACTIONS.UPDATE,
                         attributes: ["*", "!history", "!active"],
                     },
                 ],
@@ -99,11 +102,11 @@ export const Roles: Role[] = [
                 name: RESOURCES.USER,
                 actions: [
                     {
-                        name: "update",
+                        name: ACTIONS.UPDATE,
                         attributes: ["*", "!password"],
                     },
                     {
-                        name: "update",
+                        name: ACTIONS.UPDATE,
                         attributes: ["firstName", "lastName"],
                     },
                 ],
@@ -111,10 +114,10 @@ export const Roles: Role[] = [
             {
                 name: RESOURCES.ORDER,
                 actions: [
-                    { name: "read", attributes: ["*"] },
-                    { name: "update", attributes: ["status", "items"] },
+                    { name: ACTIONS.READ, attributes: ["*"] },
+                    { name: ACTIONS.UPDATE, attributes: ["status", "items"] },
                     {
-                        name: "export",
+                        name: ACTIONS.EXPORT,
                         attributes: ["*"],
                     },
                 ],
@@ -123,7 +126,7 @@ export const Roles: Role[] = [
                 name: RESOURCES.PRODUCT,
                 actions: [
                     {
-                        name: "read",
+                        name: ACTIONS.READ,
                         attributes: ["*", "!isActive"],
                         scope: {
                             namespace: "*.merchant.products",

@@ -12,6 +12,7 @@ type ArrayLengthMutationKeys =
 type ArrayItems<T extends Array<any>> = T extends Array<infer TItems>
     ? TItems
     : never;
+
 export type FixedLengthArray<T extends any[]> = Pick<
     T,
     Exclude<keyof T, ArrayLengthMutationKeys>
@@ -26,18 +27,18 @@ export class ErrorEx extends Error {
     }
 }
 
-export interface Role {
-    name: string;
-    resources: Array<Resource>;
+export interface Role<R extends [string, string, string]> {
+    name: R[0];
+    resources: Array<Resource<R[1], R[2]>>;
 }
 
-export interface Resource {
-    name: string;
-    actions: Array<Action> | FixedLengthArray<["*"]>;
+export interface Resource<ResourceNamesT = string, ActionNamesT = string> {
+    name: ResourceNamesT;
+    actions: Array<Action<ActionNamesT>> | FixedLengthArray<["*"]>;
 }
 
-export interface Action {
-    name: string;
+export interface Action<ActionNamesT = string> {
+    name: ActionNamesT;
     attributes?: Array<string>;
     scope?: Tuple;
 }

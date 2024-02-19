@@ -20,7 +20,10 @@ const ALL = "*";
  * @class
  * @typeParam T - Type of Adapter
  */
-export class SimpleAccess<T extends BaseAdapter<any>> {
+export class SimpleAccess<
+    R extends [string, string, string],
+    T extends BaseAdapter<R, any>
+> {
     constructor(private readonly _adapter: T) {
         if (this._adapter == null) {
             throw new ErrorEx(
@@ -36,7 +39,7 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
      * @returns {void}
      * @protected
      */
-    protected validateRole(role: Role): void {
+    protected validateRole(role: Role<R>): void {
         const validator: Ajv = new Ajv();
         const isValid = validator.validate(roleSchema, role);
 
@@ -56,7 +59,7 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
      * @returns {void}
      * @protected
      */
-    protected validatedAdapterRoles(roles: Array<Role>): void {
+    protected validatedAdapterRoles(roles: Array<Role<R>>): void {
         if (roles == null) {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
@@ -71,7 +74,9 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
      * @returns {{[p: string]: Tuple}} Object with merged resources, including internal data like attributes
      * @private
      */
-    private getResources(roles: Array<Role>): { [k: string]: any } {
+    private getResources(roles: Array<Role<R>>): {
+        [k: string]: any;
+    } {
         const resources: { [k: string]: any } = {};
         if (roles == null || roles.length === 0) {
             return resources;
@@ -100,15 +105,15 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
                 }
 
                 resource.actions.forEach((action) => {
-                    const aObj = action as Action;
-                    const currentAction: Action = {
+                    const aObj = action as Action<R[2]>;
+                    const currentAction: Action<R[2]> = {
                         name: aObj.name,
                         attributes: aObj.attributes
                             ? Array.from(aObj.attributes)
                             : [],
                         scope: aObj.scope ? Object.assign(aObj.scope) : {},
                     };
-                    let cachedAction: Action;
+                    let cachedAction: Action<R[2]>;
 
                     // If we have all actions allowed no need to proceed
                     if (resources[resource.name] === ALL) {
@@ -231,10 +236,10 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
      *
      */
     private getPermission(
-        role: Array<string> | string,
-        action: string,
-        resource: string,
-        roles: Array<Role>
+        role: Array<R[0]> | R[0],
+        action: R[2],
+        resource: R[1],
+        roles: Array<Role<R>>
     ): Permission {
         const roleNames = Array.isArray(role) ? role : [role];
         const pInfo: PermissionOptions = {
@@ -294,10 +299,10 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
      * @returns {Permission | Promise<Permission>}
      */
     can(
-        role: Array<string> | string,
-        action: string,
-        resource: string
-    ): CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">> {
+        role: Array<R[0]> | R[0],
+        action: R[2],
+        resource: R[1]
+    ): CanReturnType<R, TypeOfClassMethodReturn<T, "getRolesByName">> {
         const roleNames = Array.isArray(role) ? role : [role];
 
         roleNames.forEach((r) => {
@@ -313,11 +318,14 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
         const roles = this._adapter.getRolesByName(roleNames);
 
         if (roles instanceof Promise) {
-            return roles.then((rolesArray: Array<Role>) => {
+            return roles.then((rolesArray: Array<Role<R>>) => {
                 // Validate that all roles are available in roles list
                 this.validatedAdapterRoles(rolesArray);
                 return this.getPermission(role, action, resource, rolesArray);
-            }) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
+            }) as CanReturnType<
+                R,
+                TypeOfClassMethodReturn<T, "getRolesByName">
+            >;
         }
 
         // Validate that all roles are available in roles list
@@ -328,7 +336,7 @@ export class SimpleAccess<T extends BaseAdapter<any>> {
             action,
             resource,
             roles
-        ) as CanReturnType<TypeOfClassMethodReturn<T, "getRolesByName">>;
+        ) as CanReturnType<R, TypeOfClassMethodReturn<T, "getRolesByName">>;
     }
 
     /**
