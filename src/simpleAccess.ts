@@ -60,7 +60,7 @@ export class SimpleAccess<
      * @protected
      */
     protected validatedAdapterRoles(roles: Array<Role<R>>): void {
-        if (roles == null) {
+        if (roles == null || !Array.isArray(roles)) {
             throw new ErrorEx(
                 ErrorEx.VALIDATION_ERROR,
                 `Invalid roles array, returned by adapter`
@@ -317,8 +317,14 @@ export class SimpleAccess<
         // Get roles by their names
         const roles = this._adapter.getRolesByName(roleNames);
 
-        if (roles instanceof Promise) {
-            return roles.then((rolesArray: Array<Role<R>>) => {
+        const isThenable =
+            roles != null &&
+            (typeof roles === "object" || typeof roles === "function") &&
+            "then" in roles &&
+            typeof roles.then === "function";
+
+        if (isThenable) {
+            return Promise.resolve(roles).then((rolesArray: Array<Role<R>>) => {
                 // Validate that all roles are available in roles list
                 this.validatedAdapterRoles(rolesArray);
                 return this.getPermission(role, action, resource, rolesArray);

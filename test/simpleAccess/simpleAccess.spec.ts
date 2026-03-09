@@ -107,6 +107,48 @@ describe("Test core functionalities", () => {
     });
 });
 
+describe("Test can functionality with async adapters", () => {
+    it("Should handle thenable adapter results", async () => {
+        class ThenableAdapter extends MemoryAdapter<RoleDefinition> {
+            getRolesByName(names: Array<RoleDefinition[0]>): any {
+                const roles = super.getRolesByName(names);
+                return {
+                    then: (resolve: (value: Array<any>) => void) =>
+                        resolve(roles),
+                };
+            }
+        }
+
+        const simpleAccess = new SimpleAccess(new ThenableAdapter(Roles));
+        const permission = (await simpleAccess.can(
+            ROLES.SUPPORT,
+            "read",
+            RESOURCES.PRODUCT
+        )) as Permission;
+
+        expect(permission).to.be.instanceOf(Permission);
+        expect(permission.granted).to.be.equal(true);
+    });
+
+    it("Should return validation error when async adapter resolves to null", async () => {
+        class NullPromiseAdapter extends MemoryAdapter<RoleDefinition> {
+            getRolesByName(_: Array<RoleDefinition[0]>): any {
+                return Promise.resolve(null);
+            }
+        }
+
+        const simpleAccess = new SimpleAccess(new NullPromiseAdapter(Roles));
+
+        try {
+            await simpleAccess.can(ROLES.SUPPORT, "read", RESOURCES.PRODUCT);
+        } catch (e) {
+            expect(e)
+                .to.be.instanceOf(Error)
+                .with.property("name")
+                .to.be.equal(ErrorEx.VALIDATION_ERROR);
+        }
+    });
+});
 describe("Test permission object", () => {
     let permission: Permission = undefined;
     const ROLE_NAME = ROLES.SUPPORT;
