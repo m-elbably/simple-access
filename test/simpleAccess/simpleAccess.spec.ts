@@ -465,6 +465,42 @@ describe("Test can functionality with overlapped roles - scope", () => {
             .eql({});
     });
 
+
+    it("Should not mutate role scope definitions after merging overlapped roles", async () => {
+        const ROLE_NAME = [ROLES.OPERATION, ROLES.SUPPORT];
+        const ACTION_NAME = "read";
+        const RESOURCE_NAME = RESOURCES.PRODUCT;
+
+        const operationRoleBefore = acl
+            .adapter
+            .getRolesByName(ROLE_NAME)
+            .find((role) => role.name === ROLES.OPERATION) as any;
+        const operationResourceBefore = operationRoleBefore.resources.find(
+            (resource: any) => resource.name === RESOURCE_NAME
+        );
+        const operationActionBefore = operationResourceBefore.actions.find(
+            (action: any) =>
+                typeof action === "object" && action.name === ACTION_NAME
+        ) as any;
+
+        expect(operationActionBefore.scope).to.be.eql({ valid: true });
+
+        acl.can(ROLE_NAME, ACTION_NAME, RESOURCE_NAME);
+
+        const operationRoleAfter = acl
+            .adapter
+            .getRolesByName(ROLE_NAME)
+            .find((role) => role.name === ROLES.OPERATION) as any;
+        const operationResourceAfter = operationRoleAfter.resources.find(
+            (resource: any) => resource.name === RESOURCE_NAME
+        );
+        const operationActionAfter = operationResourceAfter.actions.find(
+            (action: any) =>
+                typeof action === "object" && action.name === ACTION_NAME
+        ) as any;
+
+        expect(operationActionAfter.scope).to.be.eql({ valid: true });
+    });
     it("Should return permission object with all scopes merged", async () => {
         const ROLE_NAME = [ROLES.OPERATION, ROLES.SUPPORT];
         const ACTION_NAME = "read";

@@ -111,7 +111,7 @@ export class SimpleAccess<
                         attributes: aObj.attributes
                             ? Array.from(aObj.attributes)
                             : [],
-                        scope: aObj.scope ? Object.assign(aObj.scope) : {},
+                        scope: aObj.scope ? Object.assign({}, aObj.scope) : {},
                     };
                     let cachedAction: Action<R[2]>;
 
