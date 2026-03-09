@@ -197,6 +197,33 @@ describe("Test permission object", () => {
     });
 });
 
+describe("Security regression", () => {
+    it("Should not grant permission via inherited prototype properties", async () => {
+        const pollutedRoles: any = [
+            {
+                name: "attacker",
+                resources: [
+                    {
+                        name: "__proto__",
+                        actions: [
+                            {
+                                name: "read",
+                                attributes: ["*"],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ];
+
+        const poisonedAcl = new SimpleAccess(new MemoryAdapter(pollutedRoles));
+        const permission = poisonedAcl.can("attacker", "read", "toString");
+
+        expect(permission.granted).to.be.equal(false);
+        expect(Object.keys(permission.grants)).to.be.eql(["__proto__"]);
+    });
+});
+
 describe("Test can functionality with single role", () => {
     it("Should return permission with granted equal false when resource does not exist", async () => {
         // @ts-ignore: Unreachable code error
