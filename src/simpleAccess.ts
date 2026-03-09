@@ -14,6 +14,8 @@ import { PermissionOptions, Permission } from "./types";
 import { roleSchema } from "./validation";
 
 const ALL = "*";
+const hasOwn = (obj: object, key: string): boolean =>
+    Object.prototype.hasOwnProperty.call(obj, key);
 
 /**
  * SimpleAccess Adapter Class
@@ -77,7 +79,7 @@ export class SimpleAccess<
     private getResources(roles: Array<Role<R>>): {
         [k: string]: any;
     } {
-        const resources: { [k: string]: any } = {};
+        const resources: { [k: string]: any } = Object.create(null);
         if (roles == null || roles.length === 0) {
             return resources;
         }
@@ -87,7 +89,8 @@ export class SimpleAccess<
                 let cachedResource = resources[resource.name];
                 // If resource does not exist, add to object
                 if (cachedResource == null) {
-                    cachedResource = resources[resource.name] = {};
+                    cachedResource = resources[resource.name] =
+                        Object.create(null);
                 }
 
                 // If resource has wildcard action then skip merging actions
@@ -271,13 +274,13 @@ export class SimpleAccess<
         pInfo.grants = resources;
 
         // Validate resource & ability, then update permission
-        if (resources[resource] != null) {
+        if (hasOwn(resources, resource)) {
             if (resources[resource] === ALL) {
                 // If subject has access to all actions within the resource
                 pInfo.attributes = [ALL];
                 pInfo.scope = {};
                 pInfo.granted = true;
-            } else if (resources[resource][action] != null) {
+            } else if (hasOwn(resources[resource], action)) {
                 // If subject has access specific actions within the resource
                 const { attributes, scope } = resources[resource][action];
                 pInfo.attributes = attributes || [];
